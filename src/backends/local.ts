@@ -5,8 +5,6 @@ import type {
   Backend,
   CreateFolderParams,
   CreateNoteParams,
-  FinalizeMeetingParams,
-  FinalizeMeetingResult,
   Folder,
   ListNotesParams,
   ListTranscriptionsParams,
@@ -15,17 +13,6 @@ import type {
   UpdateNoteParams,
 } from "./types.js";
 import { unwrapV1, unwrapV1List } from "./v1-envelope.js";
-
-interface LocalFinalizeResponse {
-  success: boolean;
-  dryRun?: boolean;
-  note?: Note;
-  transcriptionId?: string | number;
-  folderId?: string | number;
-  folderName?: string;
-  title?: string;
-  transcriptionDeleted?: boolean;
-}
 
 export class LocalBackend implements Backend {
   readonly kind = "local" as const;
@@ -78,7 +65,6 @@ export class LocalBackend implements Backend {
           content: params.content,
           title: params.title,
           folder_id: params.folderId,
-          source_transcription_id: params.sourceTranscriptionId,
         },
       })
     );
@@ -160,28 +146,5 @@ export class LocalBackend implements Backend {
       method: "DELETE",
       path: `/v1/transcriptions/${encodeURIComponent(transcriptionId)}/audio`,
     });
-  }
-
-  async finalizeMeeting(params: FinalizeMeetingParams): Promise<FinalizeMeetingResult> {
-    const raw = unwrapV1<LocalFinalizeResponse>(
-      await this.http.request({
-        method: "POST",
-        path: "/v1/meeting/finalize",
-        body: {
-          transcription_id: params.transcriptionId,
-          folder_id: params.folderId,
-          content: params.content,
-          title: params.title,
-          dry_run: params.dryRun ?? false,
-        },
-      })
-    );
-    return {
-      dry_run: !!raw.dryRun,
-      note_id: raw.note?.id ?? null,
-      transcription_id: params.transcriptionId,
-      folder_id: params.folderId,
-      transcription_deleted: !!raw.transcriptionDeleted,
-    };
   }
 }

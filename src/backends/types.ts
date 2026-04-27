@@ -5,7 +5,6 @@ export interface Note {
   title?: string | null;
   content?: string;
   folder_id?: number | string | null;
-  source_transcription_id?: number | string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -33,7 +32,6 @@ export interface CreateNoteParams {
   content: string;
   title?: string;
   folderId?: string;
-  sourceTranscriptionId?: string;
 }
 
 export interface UpdateNoteParams {
@@ -49,22 +47,6 @@ export interface CreateFolderParams {
 
 export interface ListTranscriptionsParams {
   limit?: number;
-}
-
-export interface FinalizeMeetingParams {
-  transcriptionId: string;
-  folderId: string;
-  content: string;
-  title?: string;
-  dryRun?: boolean;
-}
-
-export interface FinalizeMeetingResult {
-  dry_run: boolean;
-  note_id: number | string | null;
-  transcription_id: number | string;
-  folder_id: number | string;
-  transcription_deleted: boolean;
 }
 
 export interface Backend {
@@ -86,6 +68,4 @@ export interface Backend {
   deleteTranscription(id: string): Promise<void>;
 
   deleteAudio(transcriptionId: string): Promise<void>;
-
-  finalizeMeeting(params: FinalizeMeetingParams): Promise<FinalizeMeetingResult>;
 }

@@ -53,14 +53,14 @@ under a new major version.
 
 ## Exit codes
 
-| Code | Meaning                                              |
-| ---- | ---------------------------------------------------- |
-| 0    | Success                                              |
-| 1    | User error (bad args, missing flag)                  |
-| 2    | Backend unreachable                                  |
-| 3    | Auth failure                                         |
-| 4    | Not found                                            |
-| 5    | Safety gate refused (e.g. `meeting finalize` failed) |
+| Code | Meaning                             |
+| ---- | ----------------------------------- |
+| 0    | Success                             |
+| 1    | User error (bad args, missing flag) |
+| 2    | Backend unreachable                 |
+| 3    | Auth failure                        |
+| 4    | Not found                           |
+| 5    | Safety gate refused                 |
 
 ## Command surface
 
@@ -75,7 +75,6 @@ openwhispr notes list | get | create | update | delete | search
 openwhispr folders list | create
 openwhispr transcriptions list | get | delete
 openwhispr audio delete <transcription-id>
-openwhispr meeting finalize --transcription <id> --folder <id> --content-file <path>
 ```
 
 Run `openwhispr <command> --help` for full flags.

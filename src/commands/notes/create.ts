@@ -10,7 +10,6 @@ interface CreateOpts {
   contentFile?: string;
   title?: string;
   folder?: string;
-  sourceTranscription?: string;
 }
 
 export function notesCreateCommand(): Command {
@@ -20,7 +19,6 @@ export function notesCreateCommand(): Command {
     .option("--content-file <path>", "Read note content from a file")
     .option("--title <t>", "Note title")
     .option("--folder <id>", "Target folder ID")
-    .option("--source-transcription <id>", "Link to source transcription ID")
     .action(async (opts: CreateOpts, cmd: Command) => {
       if (!opts.content && !opts.contentFile) {
         throw userError("Provide --content or --content-file.");
@@ -35,7 +33,6 @@ export function notesCreateCommand(): Command {
         content,
         title: opts.title,
         folderId: opts.folder,
-        sourceTranscriptionId: opts.sourceTranscription,
       });
       printJson(note);
     });
