@@ -4,16 +4,21 @@
   "description": "OpenWhispr unified CLI — operate against the local desktop app or the cloud API from your shell",
   "type": "module",
   "bin": {
-    "openwhispr": "./dist/index.js"
+    "openwhispr": "dist/index.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc",
     "lint": "eslint . && tsc --noEmit",
     "format": "eslint --fix . && prettier --write .",
-    "format:check": "eslint . && prettier --check ."
+    "format:check": "eslint . && prettier --check .",
+    "prepublishOnly": "npm run lint && npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "commander": "^12.1.0"
@@ -29,5 +34,22 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "license": "MIT",
+  "author": "OpenWhispr",
+  "homepage": "https://openwhispr.com/cli/install",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenWhispr/openwhispr-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OpenWhispr/openwhispr-cli/issues"
+  },
+  "keywords": [
+    "openwhispr",
+    "cli",
+    "transcription",
+    "dictation",
+    "notes"
+  ]
 }
