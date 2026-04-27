@@ -1,0 +1,33 @@
+{
+  "name": "@openwhispr/cli",
+  "version": "0.1.0",
+  "description": "OpenWhispr unified CLI — operate against the local desktop app or the cloud API from your shell",
+  "type": "module",
+  "bin": {
+    "openwhispr": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . && tsc --noEmit",
+    "format": "eslint --fix . && prettier --write .",
+    "format:check": "eslint . && prettier --check ."
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^20.19.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.54.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
