@@ -78,3 +78,35 @@ openwhispr audio delete <transcription-id>
 ```
 
 Run `openwhispr <command> --help` for full flags.
+
+### Fetching just the transcript
+
+`openwhispr notes get <id>` returns the whole note payload. To pull only the
+transcript, pass `--transcript`:
+
+```sh
+# Transcript as JSON: { "transcript": "..." }
+openwhispr notes get <id> --transcript --format json
+
+# Transcript as a clean, speaker-labeled markdown blob
+openwhispr notes get <id> --transcript --format markdown
+```
+
+The markdown output parses the transcript into a readable, copy-paste-ready
+document — a `## Transcript` section with one line per segment, each timestamped
+and labeled with the speaker: `Me` for your own mic, otherwise the segment's
+`speakerName` when available, falling back to the diarized id (`speaker_0` →
+`Speaker 0`):
+
+```markdown
+# Meeting name
+
+## Transcript
+
+**jordan.lee@example.com** *(15:32:18)*: Hi, pleasure to meet you...
+
+**Me** *(15:33:23)*: I'm Sam. I lead the product team...
+```
+
+This replaces the older workaround of piping the full payload through `jq`
+(`openwhispr notes get <id> --format json | jq -r '.transcript'`).
