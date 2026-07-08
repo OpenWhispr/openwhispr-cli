@@ -107,6 +107,3 @@ and labeled with the speaker: `Me` for your own mic, otherwise the segment's
 
 **Me** *(15:33:23)*: I'm Sam. I lead the product team...
 ```
-
-This replaces the older workaround of piping the full payload through `jq`
-(`openwhispr notes get <id> --format json | jq -r '.transcript'`).
