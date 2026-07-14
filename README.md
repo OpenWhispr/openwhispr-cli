@@ -96,7 +96,7 @@ The markdown output parses the transcript into a readable, copy-paste-ready
 document — a `## Transcript` section with one line per segment, each timestamped
 and labeled with the speaker: `Me` for your own mic, otherwise the segment's
 `speakerName` when available, falling back to the diarized id (`speaker_0` →
-`Speaker 0`):
+`Speaker 1`, matching the desktop app):
 
 ```markdown
 # Meeting name
