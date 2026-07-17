@@ -1,6 +1,6 @@
 {
   "name": "@openwhispr/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenWhispr unified CLI — operate against the local desktop app or the cloud API from your shell",
   "type": "module",
   "bin": {
