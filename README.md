@@ -79,6 +79,13 @@ openwhispr audio delete <transcription-id>
 
 Run `openwhispr <command> --help` for full flags.
 
+### Enhanced notes
+
+For notes with an AI-enhanced version (e.g. meeting notes), `notes get`'s
+markdown output shows the enhanced note when one exists, matching the desktop
+app. The raw fields are always available via `--format json` (`content`,
+`enhanced_content`).
+
 ### Fetching just the transcript
 
 `openwhispr notes get <id>` returns the whole note payload. To pull only the
