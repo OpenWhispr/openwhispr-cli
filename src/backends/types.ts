@@ -4,6 +4,7 @@ export interface Note {
   id: number | string;
   title?: string | null;
   content?: string;
+  enhanced_content?: string | null;
   transcript?: string | null;
   folder_id?: number | string | null;
   created_at?: string;

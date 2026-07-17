@@ -38,7 +38,7 @@ export function notesGetCommand(): Command {
         printJson(note);
       } else {
         const title = note.title ? `# ${note.title}\n\n` : "";
-        printText(`${title}${note.content ?? ""}`);
+        printText(`${title}${note.enhanced_content || note.content || ""}`);
       }
     });
 }
