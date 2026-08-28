@@ -26,7 +26,7 @@ function jsonResponse(status, body) {
   });
 }
 
-test("submitTranscriptionJob POSTs the absolute path and unwraps the job envelope", async (t) => {
+test("submitAudioImportJob POSTs the absolute path and unwraps the job envelope", async (t) => {
   const calls = stubFetch(t, () =>
     jsonResponse(202, {
       data: { job_id: "job-1", status: "queued", stage: "queued", progress: 0 },
@@ -34,44 +34,51 @@ test("submitTranscriptionJob POSTs the absolute path and unwraps the job envelop
   );
 
   const backend = makeBackend();
-  const job = await backend.submitTranscriptionJob("/Users/erik/audio.wav");
+  const job = await backend.submitAudioImportJob("/Users/erik/audio.wav");
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].init.method, "POST");
-  assert.equal(calls[0].url.pathname, "/v1/poc/transcription-jobs");
+  assert.equal(calls[0].url.pathname, "/v1/audio-import-jobs");
   assert.equal(calls[0].url.origin, "http://127.0.0.1:8213");
   assert.deepEqual(JSON.parse(calls[0].init.body), { path: "/Users/erik/audio.wav" });
   assert.ok(String(calls[0].init.headers.Authorization).includes("test-token"));
   assert.deepEqual(job, { job_id: "job-1", status: "queued", stage: "queued", progress: 0 });
 });
 
-test("getTranscriptionJob GETs the job by id", async (t) => {
+test("getAudioImportJob GETs the job by id", async (t) => {
   stubFetch(t, (url) => {
-    assert.equal(url.pathname, "/v1/poc/transcription-jobs/job-1");
+    assert.equal(url.pathname, "/v1/audio-import-jobs/job-1");
     return jsonResponse(200, {
-      data: { job_id: "job-1", status: "completed", stage: "completed", progress: 100 },
+      data: {
+        job_id: "job-1",
+        status: "completed",
+        stage: "completed",
+        progress: 100,
+        result: { note_id: "note-1", title: "audio", text: "hello world" },
+      },
     });
   });
 
   const backend = makeBackend();
-  const job = await backend.getTranscriptionJob("job-1");
+  const job = await backend.getAudioImportJob("job-1");
   assert.equal(job.status, "completed");
+  assert.equal(job.result.note_id, "note-1");
 });
 
-test("getTranscriptionJob surfaces a 404 as a not-found CliError", async (t) => {
+test("getAudioImportJob surfaces a 404 as a not-found CliError", async (t) => {
   stubFetch(t, () => jsonResponse(404, { error: { code: "not_found", message: "not found" } }));
 
   const backend = makeBackend();
-  await assert.rejects(() => backend.getTranscriptionJob("missing"), (err) => {
+  await assert.rejects(() => backend.getAudioImportJob("missing"), (err) => {
     assert.equal(err.exitCode, 4);
     return true;
   });
 });
 
-test("cancelTranscriptionJob DELETEs the job by id and unwraps the cancellation result", async (t) => {
+test("cancelAudioImportJob DELETEs the job by id and unwraps the cancellation result", async (t) => {
   stubFetch(t, (url, init) => {
     assert.equal(init.method, "DELETE");
-    assert.equal(url.pathname, "/v1/poc/transcription-jobs/job-1");
+    assert.equal(url.pathname, "/v1/audio-import-jobs/job-1");
     return jsonResponse(200, {
       data: {
         job: { job_id: "job-1", status: "cancelled", stage: "cancelled", progress: 0 },
@@ -81,7 +88,7 @@ test("cancelTranscriptionJob DELETEs the job by id and unwraps the cancellation 
   });
 
   const backend = makeBackend();
-  const result = await backend.cancelTranscriptionJob("job-1");
+  const result = await backend.cancelAudioImportJob("job-1");
   assert.equal(result.cancelled, true);
   assert.equal(result.job.status, "cancelled");
 });

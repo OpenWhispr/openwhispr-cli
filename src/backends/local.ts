@@ -14,39 +14,39 @@ import type {
 } from "./types.js";
 import { unwrapV1, unwrapV1List } from "./v1-envelope.js";
 
-// POC-only job shape returned by the desktop bridge's /v1/poc/transcription-jobs
-// routes (see cliBridge.js's job manager). Not part of the shared Backend
+// POC-only job shape returned by the desktop bridge's /v1/audio-import-jobs
+// routes (see cliAudioImportBridge.js). Not part of the shared Backend
 // interface: this pathway only exists on the local bridge, with no cloud
 // equivalent, so RemoteBackend intentionally has no matching methods.
-export interface TranscriptionJobResult {
-  text?: string;
-  diarized?: boolean;
+//
+// Unlike a raw transcription job, this drives the desktop app's real,
+// visible upload-note flow (transcribeFileWithSpeakers -> saveUploadNote):
+// a completed job's result references the note it created, the same note a
+// user would see by importing the file through the UI.
+export interface AudioImportJobResult {
+  note_id?: string | null;
+  title?: string | null;
+  text?: string | null;
   duration_seconds?: number | null;
-  warning?: string | null;
 }
 
-export type TranscriptionJobStatus =
-  | "queued"
-  | "transcribing"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type AudioImportJobStatus = "queued" | "transcribing" | "completed" | "failed" | "cancelled";
 
-export interface TranscriptionJob {
+export interface AudioImportJob {
   job_id: string;
-  status: TranscriptionJobStatus;
+  status: AudioImportJobStatus;
   stage: string;
   progress: number;
-  path?: string;
   created_at?: string;
   updated_at?: string;
-  result?: TranscriptionJobResult | null;
+  result?: AudioImportJobResult | null;
   error?: string | null;
 }
 
-export interface TranscriptionJobCancelResult {
-  job: TranscriptionJob;
+export interface AudioImportJobCancelResult {
+  job: AudioImportJob;
   cancelled: boolean;
+  already_terminal?: boolean;
   cancellation_requested?: boolean;
 }
 
@@ -184,33 +184,33 @@ export class LocalBackend implements Backend {
     });
   }
 
-  // POC: async job wrapper around the desktop app's local transcription
-  // pathway. Local-only — there is no remote/cloud equivalent, so these are
-  // not part of the shared Backend interface (see the POC types above).
-  async submitTranscriptionJob(path: string): Promise<TranscriptionJob> {
-    return unwrapV1<TranscriptionJob>(
+  // POC: async job wrapper around the desktop app's real upload-note import
+  // flow. Local-only — there is no remote/cloud equivalent, so these are not
+  // part of the shared Backend interface (see the POC types above).
+  async submitAudioImportJob(path: string): Promise<AudioImportJob> {
+    return unwrapV1<AudioImportJob>(
       await this.http.request({
         method: "POST",
-        path: "/v1/poc/transcription-jobs",
+        path: "/v1/audio-import-jobs",
         body: { path },
       })
     );
   }
 
-  async getTranscriptionJob(jobId: string): Promise<TranscriptionJob> {
-    return unwrapV1<TranscriptionJob>(
+  async getAudioImportJob(jobId: string): Promise<AudioImportJob> {
+    return unwrapV1<AudioImportJob>(
       await this.http.request({
         method: "GET",
-        path: `/v1/poc/transcription-jobs/${encodeURIComponent(jobId)}`,
+        path: `/v1/audio-import-jobs/${encodeURIComponent(jobId)}`,
       })
     );
   }
 
-  async cancelTranscriptionJob(jobId: string): Promise<TranscriptionJobCancelResult> {
-    return unwrapV1<TranscriptionJobCancelResult>(
+  async cancelAudioImportJob(jobId: string): Promise<AudioImportJobCancelResult> {
+    return unwrapV1<AudioImportJobCancelResult>(
       await this.http.request({
         method: "DELETE",
-        path: `/v1/poc/transcription-jobs/${encodeURIComponent(jobId)}`,
+        path: `/v1/audio-import-jobs/${encodeURIComponent(jobId)}`,
       })
     );
   }

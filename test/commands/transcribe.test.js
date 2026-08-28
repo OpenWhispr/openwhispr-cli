@@ -27,11 +27,11 @@ function makeBackend({ submit, getJob }) {
   return {
     calls,
     backend: {
-      async submitTranscriptionJob(path) {
+      async submitAudioImportJob(path) {
         calls.submit.push(path);
         return submit(path);
       },
-      async getTranscriptionJob(jobId) {
+      async getAudioImportJob(jobId) {
         calls.get.push(jobId);
         return getJob(jobId, calls.get.length);
       },
@@ -58,7 +58,7 @@ test("without --wait, prints the queued job as JSON and does not poll", async ()
   });
 });
 
-test("--wait polls until completed and prints the transcript in text format", async () => {
+test("--wait polls until completed and prints the created note and transcript in text format", async () => {
   const { backend } = makeBackend({
     submit: () => ({ job_id: "job-1", status: "queued", stage: "queued", progress: 0 }),
     getJob: (jobId, pollCount) =>
@@ -69,7 +69,7 @@ test("--wait polls until completed and prints the transcript in text format", as
             status: "completed",
             stage: "completed",
             progress: 100,
-            result: { text: "hello world", diarized: false },
+            result: { note_id: "note-1", title: "audio.wav", text: "hello world" },
           },
   });
 
@@ -77,7 +77,7 @@ test("--wait polls until completed and prints the transcript in text format", as
     runTranscribe(backend, "/abs/path.wav", { wait: true, format: "text" }, 1)
   );
 
-  assert.equal(out.at(-1), "hello world\n");
+  assert.equal(out.at(-1), "Created note note-1 (audio.wav)\nhello world\n");
 });
 
 test("--wait --format json prints the full completed job", async () => {
