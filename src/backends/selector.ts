@@ -41,6 +41,16 @@ async function buildLocal(): Promise<LocalBackend> {
   return new LocalBackend(bridge);
 }
 
+// For commands with no cloud equivalent (POC transcription jobs): always the
+// local bridge, ignoring --remote/OPENWHISPR_BACKEND/config `backend` entirely
+// rather than silently falling back once auto-detection is in play.
+export async function selectLocalBackend(opts: SelectorOptions = {}): Promise<LocalBackend> {
+  if (opts.remote) {
+    throw userError("This command only supports the local desktop bridge; --remote is not supported.");
+  }
+  return buildLocal();
+}
+
 function buildRemote(config: CliConfig): RemoteBackend {
   return new RemoteBackend(resolveApiBase(config), config.apiKey);
 }

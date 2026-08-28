@@ -75,9 +75,36 @@ openwhispr notes list | get | create | update | delete | search
 openwhispr folders list | create
 openwhispr transcriptions list | get | delete
 openwhispr audio delete <transcription-id>
+openwhispr transcribe <absolute-audio-path> [--wait] [--format json|text]
 ```
 
 Run `openwhispr <command> --help` for full flags.
+
+### Local-only file transcription (POC)
+
+`openwhispr transcribe <path>` submits an absolute local audio file path to the
+desktop app's local bridge, which runs it through your already-configured
+local model/engine (Whisper or Parakeet) exactly as the desktop app's own
+"Upload audio" flow does. It only ever talks to the local bridge — there is no
+`--remote` mode for this command, and no cloud fallback. Audio bytes are never
+sent over the network; only the path is submitted, and the bridge validates
+it is absolute, exists, and looks like an audio file before queuing it.
+
+```sh
+# Queue the job and print its id/status immediately
+openwhispr transcribe /Users/me/audio.wav
+
+# Block until done, then print just the transcript text
+openwhispr transcribe /Users/me/audio.wav --wait
+
+# Block until done, then print the full job JSON (result, timings, etc.)
+openwhispr transcribe /Users/me/audio.wav --wait --format json
+```
+
+This is a proof-of-concept pathway: jobs are single-concurrency and kept
+in-memory by the desktop app, so they do not survive a desktop app restart,
+and results are not written to a note or the transcriptions database — this
+command is the only way to retrieve the transcript.
 
 ### Enhanced notes
 

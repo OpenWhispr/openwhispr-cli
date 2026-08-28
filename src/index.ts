@@ -13,6 +13,7 @@ import { transcriptionsListCommand } from "./commands/transcriptions/list.js";
 import { transcriptionsGetCommand } from "./commands/transcriptions/get.js";
 import { transcriptionsDeleteCommand } from "./commands/transcriptions/delete.js";
 import { audioDeleteCommand } from "./commands/audio/delete.js";
+import { transcribeCommand } from "./commands/transcribe.js";
 import { authLoginCommand } from "./commands/auth/login.js";
 import { authLogoutCommand } from "./commands/auth/logout.js";
 import { authStatusCommand } from "./commands/auth/status.js";
@@ -53,6 +54,8 @@ function buildProgram(): Command {
   const audio = new Command("audio").description("Audio file commands");
   audio.addCommand(audioDeleteCommand());
   program.addCommand(audio);
+
+  program.addCommand(transcribeCommand());
 
   const auth = new Command("auth").description("Authentication commands");
   auth.addCommand(authLoginCommand());
