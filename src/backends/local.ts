@@ -64,6 +64,7 @@ export class LocalBackend implements Backend {
       authLabel: "Local bridge auth failed",
       serverErrorLabel: "Local bridge error",
       defaultTimeoutMs: 10_000,
+      redirect: "error",
     });
   }
 

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import http from "node:http";
 import { LocalBackend } from "../../dist/backends/local.js";
 
 function makeBackend() {
@@ -38,6 +39,7 @@ test("submitAudioImportJob POSTs the absolute path and unwraps the job envelope"
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].init.method, "POST");
+  assert.equal(calls[0].init.redirect, "error");
   assert.equal(calls[0].url.pathname, "/v1/audio-import-jobs");
   assert.equal(calls[0].url.origin, "http://127.0.0.1:8213");
   assert.deepEqual(JSON.parse(calls[0].init.body), { path: "/Users/erik/audio.wav" });
@@ -69,10 +71,13 @@ test("getAudioImportJob surfaces a 404 as a not-found CliError", async (t) => {
   stubFetch(t, () => jsonResponse(404, { error: { code: "not_found", message: "not found" } }));
 
   const backend = makeBackend();
-  await assert.rejects(() => backend.getAudioImportJob("missing"), (err) => {
-    assert.equal(err.exitCode, 4);
-    return true;
-  });
+  await assert.rejects(
+    () => backend.getAudioImportJob("missing"),
+    (err) => {
+      assert.equal(err.exitCode, 4);
+      return true;
+    }
+  );
 });
 
 test("cancelAudioImportJob DELETEs the job by id and unwraps the cancellation result", async (t) => {
@@ -91,4 +96,44 @@ test("cancelAudioImportJob DELETEs the job by id and unwraps the cancellation re
   const result = await backend.cancelAudioImportJob("job-1");
   assert.equal(result.cancelled, true);
   assert.equal(result.job.status, "cancelled");
+});
+
+function listen(server) {
+  return new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+  });
+}
+
+function close(server) {
+  return new Promise((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve()))
+  );
+}
+
+test("submitAudioImportJob rejects redirects without disclosing its body", async (t) => {
+  let redirectedRequestCount = 0;
+  const redirectTarget = http.createServer((_request, response) => {
+    redirectedRequestCount += 1;
+    response.writeHead(200).end();
+  });
+  const targetPort = await listen(redirectTarget);
+  t.after(() => close(redirectTarget));
+
+  const redirector = http.createServer((_request, response) => {
+    response
+      .writeHead(307, {
+        Location: `http://127.0.0.1:${targetPort}/redirect-target`,
+      })
+      .end();
+  });
+  const redirectorPort = await listen(redirector);
+  t.after(() => close(redirector));
+
+  const backend = new LocalBackend({ version: 1, port: redirectorPort, token: "test-token" });
+  await assert.rejects(
+    () => backend.submitAudioImportJob("/Users/erik/private-audio.wav"),
+    /Local desktop bridge unreachable/
+  );
+
+  assert.equal(redirectedRequestCount, 0);
 });

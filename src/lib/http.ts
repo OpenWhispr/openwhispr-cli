@@ -17,6 +17,7 @@ export interface HttpClientOptions {
   authLabel: string;
   serverErrorLabel: string;
   defaultTimeoutMs?: number;
+  redirect?: "error" | "follow" | "manual";
 }
 
 export class HttpClient {
@@ -42,6 +43,7 @@ export class HttpClient {
         },
         body: req.body ? JSON.stringify(req.body) : undefined,
         signal: controller.signal,
+        redirect: this.opts.redirect,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
