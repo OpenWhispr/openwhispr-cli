@@ -11,10 +11,12 @@ export type ExitCodeValue = (typeof ExitCode)[keyof typeof ExitCode];
 
 export class CliError extends Error {
   readonly exitCode: ExitCodeValue;
+  readonly code?: string;
 
-  constructor(exitCode: ExitCodeValue, message: string) {
+  constructor(exitCode: ExitCodeValue, message: string, code?: string) {
     super(message);
     this.exitCode = exitCode;
+    this.code = code;
     this.name = "CliError";
   }
 }
