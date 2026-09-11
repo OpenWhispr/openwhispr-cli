@@ -68,6 +68,36 @@ export interface AddSnippetParams {
   replacement: string;
 }
 
+export interface TranscribeParams {
+  path: string;
+  model?: string;
+  language?: string;
+  prompt?: string;
+}
+
+export interface TranscribeSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface TranscribeResult {
+  text: string;
+  language?: string;
+  durationMs?: number;
+  provider?: string;
+  model?: string;
+  segments?: TranscribeSegment[];
+  beta?: boolean;
+}
+
+export interface LocalTranscribeModel {
+  provider: string;
+  model: string;
+  downloaded: boolean;
+  default: boolean;
+}
+
 export interface Backend {
   readonly kind: BackendKind;
   readonly description: string;
@@ -95,4 +125,6 @@ export interface Backend {
   listSnippets(): Promise<Snippet[]>;
   addSnippet(params: AddSnippetParams): Promise<Snippet>;
   removeSnippets(triggers: string[]): Promise<number>;
+
+  transcribe(params: TranscribeParams): Promise<TranscribeResult>;
 }

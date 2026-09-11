@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import type { BridgeFile } from "../lib/config.js";
 import { userError } from "../lib/errors.js";
 import { HttpClient } from "../lib/http.js";
@@ -10,12 +11,27 @@ import type {
   Folder,
   ListNotesParams,
   ListTranscriptionsParams,
+  LocalTranscribeModel,
   Note,
   Snippet,
+  TranscribeParams,
+  TranscribeResult,
+  TranscribeSegment,
   Transcription,
   UpdateNoteParams,
 } from "./types.js";
 import { unwrapV1, unwrapV1List } from "./v1-envelope.js";
+
+const TRANSCRIBE_TIMEOUT_MS = 30 * 60_000;
+
+interface LocalTranscribeResponse {
+  text: string;
+  language?: string;
+  duration_ms?: number;
+  provider: string;
+  model: string;
+  segments?: TranscribeSegment[];
+}
 
 export class LocalBackend implements Backend {
   readonly kind = "local" as const;
@@ -207,5 +223,35 @@ export class LocalBackend implements Backend {
       })
     );
     return result.removed;
+  }
+
+  async transcribe(params: TranscribeParams): Promise<TranscribeResult> {
+    if (params.prompt) {
+      throw userError("--prompt is only supported with cloud transcription (--remote).");
+    }
+    const result = unwrapV1<LocalTranscribeResponse>(
+      await this.http.request(
+        {
+          method: "POST",
+          path: "/v1/transcribe",
+          body: { path: resolve(params.path), model: params.model, language: params.language },
+        },
+        TRANSCRIBE_TIMEOUT_MS
+      )
+    );
+    return {
+      text: result.text,
+      language: result.language,
+      durationMs: result.duration_ms,
+      provider: result.provider,
+      model: result.model,
+      segments: result.segments,
+    };
+  }
+
+  async listTranscribeModels(): Promise<LocalTranscribeModel[]> {
+    return unwrapV1List<LocalTranscribeModel>(
+      await this.http.request({ method: "GET", path: "/v1/transcribe/models" })
+    );
   }
 }

@@ -77,6 +77,8 @@ openwhispr transcriptions list | get | delete
 openwhispr audio delete <transcription-id>
 openwhispr dictionary list | add <word...> | remove <word...>
 openwhispr snippets list | add <trigger> <replacement> | remove <trigger...>
+openwhispr transcribe <file> [--model <id>] [--language <code>] [--prompt <text>]
+                             [--format text|json|srt] [--note] [--title <t>] [--folder <name>]
 ```
 
 Run `openwhispr <command> --help` for full flags.
@@ -88,6 +90,25 @@ transcription toward the spelling you want. Snippets expand a spoken trigger
 phrase into saved text. Both commands work against the running desktop app or
 the cloud API; remote API keys need the `dictionary:read`/`dictionary:write` and
 `snippets:read`/`snippets:write` scopes.
+
+### Transcribing audio files
+
+`openwhispr transcribe <file>` turns an audio file into text. With the desktop
+app running it uses the app's local models (free, on-device, `--model` picks a
+downloaded model; a rejected model prints the available ones). Add `--remote`
+to use OpenWhispr Cloud instead, which requires a Pro or Business plan and an
+API key with the `transcriptions:write` scope.
+
+```sh
+openwhispr transcribe meeting.m4a                       # local, prints the transcript
+openwhispr transcribe meeting.m4a --format srt          # subtitles (local models only)
+openwhispr transcribe meeting.m4a --note --folder Work  # save as a note
+openwhispr transcribe meeting.m4a --remote --prompt "Names: Ada, Linus"
+```
+
+Cloud requests are limited to 4 MB each; larger files are split into 4-minute
+chunks with `ffmpeg` (must be on your `PATH`) and the transcripts are joined.
+Cloud transcription through the API is in beta and its limits may change.
 
 ### Enhanced notes
 

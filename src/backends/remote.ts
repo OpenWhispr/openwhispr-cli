@@ -1,4 +1,8 @@
-import { authFailure, notFound, userError } from "../lib/errors.js";
+import { spawnSync } from "node:child_process";
+import { promises as fs, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, extname, join } from "node:path";
+import { authFailure, CliError, notFound, userError } from "../lib/errors.js";
 import { HttpClient } from "../lib/http.js";
 import type {
   AddSnippetParams,
@@ -11,10 +15,35 @@ import type {
   ListTranscriptionsParams,
   Note,
   Snippet,
+  TranscribeParams,
+  TranscribeResult,
   Transcription,
   UpdateNoteParams,
 } from "./types.js";
 import { unwrapV1, unwrapV1List } from "./v1-envelope.js";
+
+const MAX_UPLOAD_BYTES = 4_000_000;
+const CHUNK_SECONDS = 240;
+const TRANSCRIBE_TIMEOUT_MS = 5 * 60_000;
+
+const AUDIO_TYPES: Record<string, string> = {
+  ".wav": "audio/wav",
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".mp4": "audio/mp4",
+  ".ogg": "audio/ogg",
+  ".flac": "audio/flac",
+  ".webm": "audio/webm",
+};
+
+interface RemoteTranscribeResponse {
+  text: string;
+  language?: string;
+  duration_ms?: number;
+  provider?: string;
+  model?: string;
+  beta?: boolean;
+}
 
 export class RemoteBackend implements Backend {
   readonly kind = "remote" as const;
@@ -189,6 +218,63 @@ export class RemoteBackend implements Backend {
     );
   }
 
+  async transcribe(params: TranscribeParams): Promise<TranscribeResult> {
+    if (params.model) {
+      throw userError("--model is only supported with local transcription (desktop app).");
+    }
+    const { size } = await fs.stat(params.path);
+    if (size <= MAX_UPLOAD_BYTES) return this.transcribeUpload(params.path, params);
+
+    if (spawnSync("ffmpeg", ["-version"]).status !== 0) {
+      throw userError(
+        "Files over 4 MB need ffmpeg installed for cloud transcription (it is split into 4-minute chunks), or use local transcription with the desktop app running."
+      );
+    }
+    const dir = await fs.mkdtemp(join(tmpdir(), "openwhispr-transcribe-"));
+    try {
+      const chunks = splitAudio(params.path, dir);
+      const results: TranscribeResult[] = [];
+      for (const [i, chunk] of chunks.entries()) {
+        try {
+          results.push(await this.transcribeUpload(chunk, params));
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          const exitCode = err instanceof CliError ? err.exitCode : 1;
+          throw new CliError(exitCode, `Chunk ${i + 1} of ${chunks.length} failed: ${message}`);
+        }
+      }
+      return {
+        ...results[0],
+        text: results.map((r) => r.text.trim()).join(" "),
+        durationMs: results.reduce((sum, r) => sum + (r.durationMs ?? 0), 0),
+      };
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  private async transcribeUpload(
+    filePath: string,
+    params: Pick<TranscribeParams, "language" | "prompt">
+  ): Promise<TranscribeResult> {
+    const form = new FormData();
+    const type = AUDIO_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream";
+    form.append("file", new Blob([await fs.readFile(filePath)], { type }), basename(filePath));
+    if (params.language) form.append("language", params.language);
+    if (params.prompt) form.append("prompt", params.prompt);
+    const result = unwrapV1<RemoteTranscribeResponse>(
+      await this.http.request({ method: "POST", path: "/transcribe", form }, TRANSCRIBE_TIMEOUT_MS)
+    );
+    return {
+      text: result.text,
+      language: result.language,
+      durationMs: result.duration_ms,
+      provider: result.provider,
+      model: result.model,
+      beta: result.beta,
+    };
+  }
+
   private async listAll<T>(path: string): Promise<T[]> {
     const items: T[] = [];
     let cursor: string | undefined;
@@ -237,4 +323,39 @@ export class RemoteBackend implements Backend {
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
+}
+
+// Mirrors the desktop app's splitAudioFile settings; 64 kbps mono keeps each chunk under ~2 MB.
+function splitAudio(input: string, dir: string): string[] {
+  const ffmpeg = spawnSync(
+    "ffmpeg",
+    [
+      "-nostdin",
+      "-loglevel",
+      "error",
+      "-i",
+      input,
+      "-f",
+      "segment",
+      "-segment_time",
+      String(CHUNK_SECONDS),
+      "-c:a",
+      "libmp3lame",
+      "-b:a",
+      "64k",
+      "-ar",
+      "16000",
+      "-ac",
+      "1",
+      join(dir, "chunk-%03d.mp3"),
+    ],
+    { encoding: "utf8" }
+  );
+  if (ffmpeg.status !== 0) {
+    throw userError(`ffmpeg failed to split the audio file: ${ffmpeg.stderr.trim()}`);
+  }
+  return readdirSync(dir)
+    .filter((name) => name.startsWith("chunk-"))
+    .sort()
+    .map((name) => join(dir, name));
 }

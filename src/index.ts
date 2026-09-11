@@ -19,6 +19,7 @@ import { dictionaryRemoveCommand } from "./commands/dictionary/remove.js";
 import { snippetsListCommand } from "./commands/snippets/list.js";
 import { snippetsAddCommand } from "./commands/snippets/add.js";
 import { snippetsRemoveCommand } from "./commands/snippets/remove.js";
+import { transcribeCommand } from "./commands/transcribe.js";
 import { authLoginCommand } from "./commands/auth/login.js";
 import { authLogoutCommand } from "./commands/auth/logout.js";
 import { authStatusCommand } from "./commands/auth/status.js";
@@ -71,6 +72,8 @@ function buildProgram(): Command {
   snippets.addCommand(snippetsAddCommand());
   snippets.addCommand(snippetsRemoveCommand());
   program.addCommand(snippets);
+
+  program.addCommand(transcribeCommand());
 
   const auth = new Command("auth").description("Authentication commands");
   auth.addCommand(authLoginCommand());

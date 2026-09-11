@@ -7,6 +7,7 @@ export interface HttpRequest {
   path: string;
   query?: Record<string, string | number | undefined>;
   body?: Record<string, unknown>;
+  form?: FormData;
 }
 
 export interface HttpClientOptions {
@@ -38,9 +39,9 @@ export class HttpClient {
         method: req.method,
         headers: {
           Authorization: `Bearer ${this.opts.authToken}`,
-          ...(req.body ? { "Content-Type": "application/json" } : {}),
+          ...(req.body && !req.form ? { "Content-Type": "application/json" } : {}),
         },
-        body: req.body ? JSON.stringify(req.body) : undefined,
+        body: req.form ?? (req.body ? JSON.stringify(req.body) : undefined),
         signal: controller.signal,
       });
     } catch (err) {
@@ -51,8 +52,8 @@ export class HttpClient {
     }
   }
 
-  async request(req: HttpRequest): Promise<unknown> {
-    const res = await this.fetchRaw(req);
+  async request(req: HttpRequest, timeoutMs?: number): Promise<unknown> {
+    const res = await this.fetchRaw(req, timeoutMs);
     if (res.status === 204) return undefined;
 
     const text = await res.text();
@@ -67,26 +68,31 @@ export class HttpClient {
 
     if (res.ok) return parsed;
 
-    const message = extractErrorMessage(parsed) ?? `HTTP ${res.status}`;
+    const { code, message = `HTTP ${res.status}` } = extractError(parsed);
     if (res.status === 401 || res.status === 403) {
       throw authFailure(`${this.opts.authLabel}: ${message}`);
     }
     if (res.status === 404) throw notFound(message);
     if (res.status >= 500) throw backendUnreachable(`${this.opts.serverErrorLabel}: ${message}`);
-    throw new CliError(1, message);
+    throw new CliError(1, message, code);
   }
 }
 
-function extractErrorMessage(parsed: unknown): string | undefined {
-  if (parsed === null || parsed === undefined) return undefined;
-  if (typeof parsed === "string") return parsed;
-  if (typeof parsed !== "object") return undefined;
+function extractError(parsed: unknown): { code?: string; message?: string } {
+  if (parsed === null || parsed === undefined) return {};
+  if (typeof parsed === "string") return { message: parsed };
+  if (typeof parsed !== "object") return {};
   const obj = parsed as Record<string, unknown>;
-  if (typeof obj.error === "string") return obj.error;
+  if (typeof obj.error === "string") return { message: obj.error };
   if (obj.error && typeof obj.error === "object") {
     const inner = obj.error as Record<string, unknown>;
-    if (typeof inner.message === "string") return inner.message;
+    if (typeof inner.message === "string") {
+      return {
+        code: typeof inner.code === "string" ? inner.code : undefined,
+        message: inner.message,
+      };
+    }
   }
-  if (typeof obj.message === "string") return obj.message;
-  return undefined;
+  if (typeof obj.message === "string") return { message: obj.message };
+  return {};
 }
