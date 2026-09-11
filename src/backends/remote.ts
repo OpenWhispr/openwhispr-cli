@@ -212,10 +212,12 @@ export class RemoteBackend implements Backend {
     keys: string[]
   ): Promise<number> {
     const byKey = new Map(items.map((item) => [normalize(keyOf(item)), item]));
+    // Dedupe so "remove foo Foo" deletes once instead of 404ing on the repeat.
+    const requested = new Map(keys.map((key) => [normalize(key), key]));
     const missing: string[] = [];
     let removed = 0;
-    for (const key of keys) {
-      const match = byKey.get(normalize(key));
+    for (const [normalized, key] of requested) {
+      const match = byKey.get(normalized);
       if (!match?.id) {
         missing.push(key);
         continue;
