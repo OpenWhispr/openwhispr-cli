@@ -86,7 +86,9 @@ function printResult(result: TranscribeResult, format: TranscribeFormat): void {
 
 export function transcribeCommand(): Command {
   return new Command("transcribe")
-    .description("Transcribe an audio file with the desktop app's local models or OpenWhispr Cloud")
+    .description(
+      "Transcribe an audio file with the desktop app's local models (free, no size limit), or with OpenWhispr Cloud via --remote (beta: Pro/Business, 4 MB per request, larger files split with ffmpeg)"
+    )
     .argument("<file>", "Audio file to transcribe")
     .option("--model <id>", "Local model to use (desktop app only)")
     .option("--language <code>", "Spoken language code, e.g. en")
