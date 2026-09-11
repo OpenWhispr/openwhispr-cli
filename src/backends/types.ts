@@ -51,6 +51,23 @@ export interface ListTranscriptionsParams {
   limit?: number;
 }
 
+export interface DictionaryEntry {
+  id?: string;
+  word: string;
+  source?: string;
+}
+
+export interface Snippet {
+  id?: string;
+  trigger: string;
+  replacement: string;
+}
+
+export interface AddSnippetParams {
+  trigger: string;
+  replacement: string;
+}
+
 export interface Backend {
   readonly kind: BackendKind;
   readonly description: string;
@@ -70,4 +87,12 @@ export interface Backend {
   deleteTranscription(id: string): Promise<void>;
 
   deleteAudio(transcriptionId: string): Promise<void>;
+
+  listDictionary(): Promise<DictionaryEntry[]>;
+  addDictionaryWords(words: string[]): Promise<DictionaryEntry[]>;
+  removeDictionaryWords(words: string[]): Promise<number>;
+
+  listSnippets(): Promise<Snippet[]>;
+  addSnippet(params: AddSnippetParams): Promise<Snippet>;
+  removeSnippets(triggers: string[]): Promise<number>;
 }

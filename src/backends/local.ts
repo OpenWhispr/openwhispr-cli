@@ -2,13 +2,16 @@ import type { BridgeFile } from "../lib/config.js";
 import { userError } from "../lib/errors.js";
 import { HttpClient } from "../lib/http.js";
 import type {
+  AddSnippetParams,
   Backend,
   CreateFolderParams,
   CreateNoteParams,
+  DictionaryEntry,
   Folder,
   ListNotesParams,
   ListTranscriptionsParams,
   Note,
+  Snippet,
   Transcription,
   UpdateNoteParams,
 } from "./types.js";
@@ -146,5 +149,63 @@ export class LocalBackend implements Backend {
       method: "DELETE",
       path: `/v1/transcriptions/${encodeURIComponent(transcriptionId)}/audio`,
     });
+  }
+
+  async listDictionary(): Promise<DictionaryEntry[]> {
+    const words = unwrapV1List<string>(
+      await this.http.request({ method: "GET", path: "/v1/dictionary/list" })
+    );
+    return words.map((word) => ({ word }));
+  }
+
+  async addDictionaryWords(words: string[]): Promise<DictionaryEntry[]> {
+    const result = unwrapV1<{ words: string[] }>(
+      await this.http.request({
+        method: "POST",
+        path: "/v1/dictionary/update",
+        body: { add: words },
+      })
+    );
+    return result.words.map((word) => ({ word }));
+  }
+
+  async removeDictionaryWords(words: string[]): Promise<number> {
+    const result = unwrapV1<{ removed: number }>(
+      await this.http.request({
+        method: "POST",
+        path: "/v1/dictionary/update",
+        body: { remove: words },
+      })
+    );
+    return result.removed;
+  }
+
+  async listSnippets(): Promise<Snippet[]> {
+    return unwrapV1List<Snippet>(
+      await this.http.request({ method: "GET", path: "/v1/snippets/list" })
+    );
+  }
+
+  async addSnippet(params: AddSnippetParams): Promise<Snippet> {
+    const result = unwrapV1<{ snippets: Snippet[] }>(
+      await this.http.request({
+        method: "POST",
+        path: "/v1/snippets/update",
+        body: { add: [params] },
+      })
+    );
+    const trigger = params.trigger.trim().toLowerCase();
+    return result.snippets.find((s) => s.trigger.trim().toLowerCase() === trigger) ?? params;
+  }
+
+  async removeSnippets(triggers: string[]): Promise<number> {
+    const result = unwrapV1<{ removed: number }>(
+      await this.http.request({
+        method: "POST",
+        path: "/v1/snippets/update",
+        body: { remove: triggers },
+      })
+    );
+    return result.removed;
   }
 }

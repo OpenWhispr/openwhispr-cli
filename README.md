@@ -75,9 +75,19 @@ openwhispr notes list | get | create | update | delete | search
 openwhispr folders list | create
 openwhispr transcriptions list | get | delete
 openwhispr audio delete <transcription-id>
+openwhispr dictionary list | add <word...> | remove <word...>
+openwhispr snippets list | add <trigger> <replacement> | remove <trigger...>
 ```
 
 Run `openwhispr <command> --help` for full flags.
+
+### Dictionary and snippets
+
+The dictionary is a list of words (names, jargon, acronyms) that biases
+transcription toward the spelling you want. Snippets expand a spoken trigger
+phrase into saved text. Both commands work against the running desktop app or
+the cloud API; remote API keys need the `dictionary:read`/`dictionary:write` and
+`snippets:read`/`snippets:write` scopes.
 
 ### Enhanced notes
 
@@ -110,7 +120,7 @@ and labeled with the speaker: `Me` for your own mic, otherwise the segment's
 
 ## Transcript
 
-**jordan.lee@example.com** *(15:32:18)*: Hi, pleasure to meet you...
+**jordan.lee@example.com** _(15:32:18)_: Hi, pleasure to meet you...
 
-**Me** *(15:33:23)*: I'm Sam. I lead the product team...
+**Me** _(15:33:23)_: I'm Sam. I lead the product team...
 ```

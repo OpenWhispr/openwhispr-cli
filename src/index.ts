@@ -13,6 +13,12 @@ import { transcriptionsListCommand } from "./commands/transcriptions/list.js";
 import { transcriptionsGetCommand } from "./commands/transcriptions/get.js";
 import { transcriptionsDeleteCommand } from "./commands/transcriptions/delete.js";
 import { audioDeleteCommand } from "./commands/audio/delete.js";
+import { dictionaryListCommand } from "./commands/dictionary/list.js";
+import { dictionaryAddCommand } from "./commands/dictionary/add.js";
+import { dictionaryRemoveCommand } from "./commands/dictionary/remove.js";
+import { snippetsListCommand } from "./commands/snippets/list.js";
+import { snippetsAddCommand } from "./commands/snippets/add.js";
+import { snippetsRemoveCommand } from "./commands/snippets/remove.js";
 import { authLoginCommand } from "./commands/auth/login.js";
 import { authLogoutCommand } from "./commands/auth/logout.js";
 import { authStatusCommand } from "./commands/auth/status.js";
@@ -53,6 +59,18 @@ function buildProgram(): Command {
   const audio = new Command("audio").description("Audio file commands");
   audio.addCommand(audioDeleteCommand());
   program.addCommand(audio);
+
+  const dictionary = new Command("dictionary").description("Dictionary commands");
+  dictionary.addCommand(dictionaryListCommand());
+  dictionary.addCommand(dictionaryAddCommand());
+  dictionary.addCommand(dictionaryRemoveCommand());
+  program.addCommand(dictionary);
+
+  const snippets = new Command("snippets").description("Snippet commands");
+  snippets.addCommand(snippetsListCommand());
+  snippets.addCommand(snippetsAddCommand());
+  snippets.addCommand(snippetsRemoveCommand());
+  program.addCommand(snippets);
 
   const auth = new Command("auth").description("Authentication commands");
   auth.addCommand(authLoginCommand());
