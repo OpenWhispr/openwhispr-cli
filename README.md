@@ -78,7 +78,7 @@ openwhispr audio delete <transcription-id>
 openwhispr dictionary list | add <word...> | remove <word...>
 openwhispr snippets list | add <trigger> <replacement> | remove <trigger...>
 openwhispr transcribe <file> [--model <id>] [--language <code>] [--prompt <text>]
-                             [--format text|json|srt] [--note] [--title <t>] [--folder <name>]
+                             [--format text|json] [--note] [--title <t>] [--folder <name>]
 ```
 
 Run `openwhispr <command> --help` for full flags.
@@ -94,21 +94,24 @@ the cloud API; remote API keys need the `dictionary:read`/`dictionary:write` and
 ### Transcribing audio files
 
 `openwhispr transcribe <file>` turns an audio file into text. With the desktop
-app running it uses the app's local models (free, on-device, `--model` picks a
-downloaded model; a rejected model prints the available ones). Add `--remote`
-to use OpenWhispr Cloud instead, which requires a Pro or Business plan and an
-API key with the `transcriptions:write` scope.
+app running it uses the app's local models: free, on-device, no size limit.
+`--model` picks a downloaded model by name (e.g. `base`); a rejected model
+prints the available ones. Add `--remote` to use OpenWhispr Cloud instead,
+which requires a Pro or Business plan and an API key with the
+`transcriptions:write` scope. `--prompt` is cloud only; `--model` is local only.
 
 ```sh
 openwhispr transcribe meeting.m4a                       # local, prints the transcript
-openwhispr transcribe meeting.m4a --format srt          # subtitles (local models only)
-openwhispr transcribe meeting.m4a --note --folder Work  # save as a note
+openwhispr transcribe meeting.m4a --format json         # text plus provider, model, duration
+openwhispr transcribe meeting.m4a --note --folder Work  # save as a note (folder by name)
 openwhispr transcribe meeting.m4a --remote --prompt "Names: Ada, Linus"
 ```
 
-Cloud requests are limited to 4 MB each; larger files are split into 4-minute
-chunks with `ffmpeg` (must be on your `PATH`) and the transcripts are joined.
-Cloud transcription through the API is in beta and its limits may change.
+**Cloud transcription is in beta** and its limits may change. Each request is
+capped at 4 MB, so larger files are split into 4-minute chunks with `ffmpeg`
+(must be on your `PATH`), uploaded one at a time, and the transcripts joined.
+Cloud minutes are limited to 600 per month per account. The audio is uploaded;
+the file's path on your machine is not.
 
 ### Enhanced notes
 

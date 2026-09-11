@@ -16,7 +16,6 @@ import type {
   Snippet,
   TranscribeParams,
   TranscribeResult,
-  TranscribeSegment,
   Transcription,
   UpdateNoteParams,
 } from "./types.js";
@@ -26,11 +25,9 @@ const TRANSCRIBE_TIMEOUT_MS = 30 * 60_000;
 
 interface LocalTranscribeResponse {
   text: string;
-  language?: string;
-  duration_ms?: number;
   provider: string;
   model: string;
-  segments?: TranscribeSegment[];
+  warning?: string;
 }
 
 export class LocalBackend implements Backend {
@@ -227,7 +224,9 @@ export class LocalBackend implements Backend {
 
   async transcribe(params: TranscribeParams): Promise<TranscribeResult> {
     if (params.prompt) {
-      throw userError("--prompt is only supported with cloud transcription (--remote).");
+      throw userError(
+        "--prompt only applies to cloud transcription. Add --remote to use it, or drop --prompt to transcribe locally."
+      );
     }
     const result = unwrapV1<LocalTranscribeResponse>(
       await this.http.request(
@@ -241,11 +240,9 @@ export class LocalBackend implements Backend {
     );
     return {
       text: result.text,
-      language: result.language,
-      durationMs: result.duration_ms,
       provider: result.provider,
       model: result.model,
-      segments: result.segments,
+      warning: result.warning,
     };
   }
 

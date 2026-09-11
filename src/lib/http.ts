@@ -69,6 +69,8 @@ export class HttpClient {
     if (res.ok) return parsed;
 
     const { code, message = `HTTP ${res.status}` } = extractError(parsed);
+    // plan_required is a billing gate, not a credential problem: pass it through as-is.
+    if (code === "plan_required") throw new CliError(1, message, code);
     if (res.status === 401 || res.status === 403) {
       throw authFailure(`${this.opts.authLabel}: ${message}`);
     }

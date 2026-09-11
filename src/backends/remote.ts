@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { promises as fs, readdirSync } from "node:fs";
+import { promises as fs, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { authFailure, CliError, notFound, userError } from "../lib/errors.js";
@@ -220,17 +220,25 @@ export class RemoteBackend implements Backend {
 
   async transcribe(params: TranscribeParams): Promise<TranscribeResult> {
     if (params.model) {
-      throw userError("--model is only supported with local transcription (desktop app).");
+      throw userError(
+        "--model only applies to local transcription. Drop --remote to use the desktop app's models, or drop --model to use the cloud default."
+      );
     }
     const { size } = await fs.stat(params.path);
     if (size <= MAX_UPLOAD_BYTES) return this.transcribeUpload(params.path, params);
 
     if (spawnSync("ffmpeg", ["-version"]).status !== 0) {
       throw userError(
-        "Files over 4 MB need ffmpeg installed for cloud transcription (it is split into 4-minute chunks), or use local transcription with the desktop app running."
+        "This file is over 4 MB, the cloud limit per request. Install ffmpeg so the CLI can split it into 4-minute chunks, or transcribe it locally with the desktop app running."
       );
     }
     const dir = await fs.mkdtemp(join(tmpdir(), "openwhispr-transcribe-"));
+    const removeDir = (): void => rmSync(dir, { recursive: true, force: true });
+    const onInterrupt = (): void => {
+      removeDir();
+      process.exit(130);
+    };
+    process.once("SIGINT", onInterrupt);
     try {
       const chunks = splitAudio(params.path, dir);
       const results: TranscribeResult[] = [];
@@ -245,11 +253,15 @@ export class RemoteBackend implements Backend {
       }
       return {
         ...results[0],
-        text: results.map((r) => r.text.trim()).join(" "),
+        text: results
+          .map((r) => r.text.trim())
+          .filter(Boolean)
+          .join(" "),
         durationMs: results.reduce((sum, r) => sum + (r.durationMs ?? 0), 0),
       };
     } finally {
-      await fs.rm(dir, { recursive: true, force: true });
+      process.off("SIGINT", onInterrupt);
+      removeDir();
     }
   }
 
@@ -352,7 +364,9 @@ function splitAudio(input: string, dir: string): string[] {
     { encoding: "utf8" }
   );
   if (ffmpeg.status !== 0) {
-    throw userError(`ffmpeg failed to split the audio file: ${ffmpeg.stderr.trim()}`);
+    throw userError(
+      `ffmpeg could not split the audio file; check that it is a valid audio file. ffmpeg said: ${ffmpeg.stderr.trim()}`
+    );
   }
   return readdirSync(dir)
     .filter((name) => name.startsWith("chunk-"))

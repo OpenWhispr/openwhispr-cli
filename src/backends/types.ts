@@ -75,19 +75,13 @@ export interface TranscribeParams {
   prompt?: string;
 }
 
-export interface TranscribeSegment {
-  start: number;
-  end: number;
-  text: string;
-}
-
 export interface TranscribeResult {
   text: string;
   language?: string;
   durationMs?: number;
   provider?: string;
   model?: string;
-  segments?: TranscribeSegment[];
+  warning?: string;
   beta?: boolean;
 }
 
